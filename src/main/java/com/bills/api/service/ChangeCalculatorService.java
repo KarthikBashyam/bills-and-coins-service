@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Service
 public class ChangeCalculatorService {
 
-    private Logger LOGGER  = LoggerFactory.getLogger(ChangeCalculatorService.class);
+    private Logger LOGGER = LoggerFactory.getLogger(ChangeCalculatorService.class);
 
     private CoinInventory coinInventory;
 
@@ -35,18 +35,18 @@ public class ChangeCalculatorService {
 
     public ChangeResponseDTO calculate(double amount) throws CoinNotAvailableException {
         System.out.println("=== AMOUNT:" + amount);
-        double balance = amount;
+        BigDecimal balance = BigDecimal.valueOf(amount);
 
         Map<Bill, Integer> billDenomination = new HashMap<>();
 
-        while (balance > 1 && balance > 0) {
-            final double bal = balance;
-            Optional<Bill> billAvailable = bills.stream().filter(bill -> bill.getBillValue() <= bal).findFirst();
+        while (balance.doubleValue() > 1 && balance.doubleValue() > 0) {
+            final BigDecimal bal = balance;
+            Optional<Bill> billAvailable = bills.stream().filter(bill -> isLessThanOrEqual(bal, bill)).findFirst();
 
             if (billAvailable.isPresent()) {
                 Bill bill = billAvailable.get();
-                int count = (int) balance / bill.getBillValue();
-                balance = balance % bill.getBillValue();
+                int count = (int) balance.divide(bill.getBillValue()).intValue();
+                balance = balance.remainder(bill.getBillValue());
                 billDenomination.put(bill, billDenomination.getOrDefault(bill, 0) + count);
             }
 
@@ -66,9 +66,9 @@ public class ChangeCalculatorService {
 
     }
 
-    private Map<Coin, Integer> calculateCoinDenominations(double balance) throws CoinNotAvailableException {
+    private Map<Coin, Integer> calculateCoinDenominations(BigDecimal balance) throws CoinNotAvailableException {
 
-        BigDecimal coinAmount = BigDecimal.valueOf(balance);
+        BigDecimal coinAmount = balance;
         coinAmount.setScale(2, RoundingMode.FLOOR);
 
         Map<Coin, Integer> coinDenominations = new HashMap<>();
@@ -84,10 +84,10 @@ public class ChangeCalculatorService {
                 int count = Math.min(bal.divide(coin.getCoinValue(), 0).intValue(), coinInventory.getCount(coin));
                 coinAmount = coinAmount.subtract(coin.getCoinValue().multiply(BigDecimal.valueOf(count)));
                 coinInventory.reduceCoinCount(coin, count);
-                LOGGER.info(coin + "-" + "Count:"+count+"- Remaining Balance:"+coinAmount);
-                coinDenominations.put(coin, coinDenominations.getOrDefault(coin,0) + count);
+                LOGGER.info(coin + "-" + "Count:" + count + "- Remaining Balance:" + coinAmount);
+                coinDenominations.put(coin, coinDenominations.getOrDefault(coin, 0) + count);
             } else {
-                throw new CoinNotAvailableException("Coins not available for remaining balance:" + coinAmount+" , Coin balance:" + coinInventory.getCoinBalance());
+                throw new CoinNotAvailableException("Coins not available for remaining balance:" + coinAmount + " , Coin balance:" + coinInventory.getCoinBalance());
             }
 
         }
@@ -97,6 +97,10 @@ public class ChangeCalculatorService {
 
     private boolean isLessThanOrEqual(BigDecimal bal, Coin coin) {
         return coin.getCoinValue().compareTo(bal) == -1 || coin.getCoinValue().compareTo(bal) == 0;
+    }
+
+    private boolean isLessThanOrEqual(BigDecimal bal, Bill bill) {
+        return bill.getBillValue().compareTo(bal) == -1 || bill.getBillValue().compareTo(bal) == 0;
     }
 
     public CoinBalanceResponseDTO getCoinBalance() {

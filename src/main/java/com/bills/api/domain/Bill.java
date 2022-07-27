@@ -1,18 +1,26 @@
 package com.bills.api.domain;
 
+import java.math.BigDecimal;
+
 public enum Bill {
 
 
-    ONE(1), TWO(2), FIVE(5), TEN(10), TWENTY(20), FIFTY(50), HUNDRED(100);
+    ONE(new BigDecimal(1)),
+    TWO(new BigDecimal(2)),
+    FIVE(new BigDecimal(5)),
+    TEN(new BigDecimal(10)),
+    TWENTY(new BigDecimal(20)),
+    FIFTY(new BigDecimal(50)),
+    HUNDRED(new BigDecimal(100));
 
-    private int value;
+    private BigDecimal value;
 
 
-    Bill(int billType) {
-        this.value = billType;
+    Bill(BigDecimal billValue) {
+        this.value = billValue;
     }
 
-    public int getBillValue() {
+    public BigDecimal getBillValue() {
         return value;
     }
 
