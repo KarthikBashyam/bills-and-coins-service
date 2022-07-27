@@ -77,12 +77,13 @@ public class ChangeCalculatorService {
 
             final var bal = coinAmount;
 
-            Optional<Coin> coinAvailable = coins.stream().filter(coin -> coinInventory.isCoinAvailable(coin)).filter(coin -> isLessThanOrEqual(bal, coin.getCoinValue())).findFirst();
+            Optional<Coin> coinAvailable = coins.stream().filter(coinInventory::isCoinAvailable).filter(coin -> isLessThanOrEqual(bal, coin.getCoinValue())).findFirst();
 
             if (coinAvailable.isPresent()) {
                 Coin coin = coinAvailable.get();
                 int count = Math.min(bal.divide(coin.getCoinValue(), 0).intValue(), coinInventory.getCount(coin));
-                coinAmount = coinAmount.subtract(coin.getCoinValue().multiply(BigDecimal.valueOf(count)));
+                //coinAmount = coinAmount.subtract(coin.getCoinValue().multiply(BigDecimal.valueOf(count)));
+                coinAmount = coinAmount.remainder(coin.getCoinValue());
                 coinInventory.reduceCoinCount(coin, count);
                 LOGGER.info(coin + "-" + "Count:" + count + "- Remaining Balance:" + coinAmount);
                 coinDenominations.put(coin, coinDenominations.getOrDefault(coin, 0) + count);
