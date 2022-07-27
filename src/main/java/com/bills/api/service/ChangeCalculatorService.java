@@ -39,7 +39,7 @@ public class ChangeCalculatorService {
 
         Map<Bill, Integer> billDenomination = new HashMap<>();
 
-        while (balance.doubleValue() > 1 && balance.doubleValue() > 0) {
+        while (balance.doubleValue() > 1) {
             final BigDecimal bal = balance;
             Optional<Bill> billAvailable = bills.stream().filter(bill -> isLessThanOrEqual(bal, bill.getBillValue())).findFirst();
 

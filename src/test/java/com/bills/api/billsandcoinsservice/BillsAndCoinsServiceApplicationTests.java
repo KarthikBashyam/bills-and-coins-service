@@ -42,14 +42,20 @@ class BillsAndCoinsServiceApplicationTests {
 	public void validateChangeServiceRequest() {
 		ChangeRequestDTO requestDTO = new ChangeRequestDTO();
 		requestDTO.setAmount(0.0);
-		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-		HttpEntity<ChangeRequestDTO> request = new HttpEntity<>(requestDTO, headers);
+
+		HttpEntity<ChangeRequestDTO> request = new HttpEntity<>(requestDTO, getHttpHeaders());
 
 		APIError apiError = this.restTemplate.postForObject("http://localhost:" + port + "/calculate",
 				requestDTO, APIError.class);
 		assertThat(apiError.getReason()).contains("Validation failed");
 	}
+
+	private HttpHeaders getHttpHeaders() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		return headers;
+	}
+
 	@Test
 	public void greetingShouldReturnDefaultMessage() throws Exception {
 		assertThat(this.restTemplate.getForObject("http://localhost:" + port + "/coins/balance",
@@ -61,9 +67,8 @@ class BillsAndCoinsServiceApplicationTests {
 	public void validateChangeServiceResponse() {
 		ChangeRequestDTO requestDTO = new ChangeRequestDTO();
 		requestDTO.setAmount(115.50);
-		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-		HttpEntity<ChangeRequestDTO> request = new HttpEntity<>(requestDTO, headers);
+
+		HttpEntity<ChangeRequestDTO> request = new HttpEntity<>(requestDTO, getHttpHeaders());
 
 		ChangeResponseDTO changeRespoonseDTO = this.restTemplate.postForObject("http://localhost:" + port + "/calculate",
 				requestDTO, ChangeResponseDTO.class);
