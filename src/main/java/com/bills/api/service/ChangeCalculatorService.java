@@ -34,14 +34,14 @@ public class ChangeCalculatorService {
     }
 
     public ChangeResponseDTO calculate(double amount) throws CoinNotAvailableException {
-        System.out.println("=== AMOUNT:" + amount);
+        LOGGER.info("=== AMOUNT:" + amount);
         BigDecimal balance = BigDecimal.valueOf(amount);
 
         Map<Bill, Integer> billDenomination = new HashMap<>();
 
         while (balance.doubleValue() > 1 && balance.doubleValue() > 0) {
             final BigDecimal bal = balance;
-            Optional<Bill> billAvailable = bills.stream().filter(bill -> isLessThanOrEqual(bal, bill)).findFirst();
+            Optional<Bill> billAvailable = bills.stream().filter(bill -> isLessThanOrEqual(bal, bill.getBillValue())).findFirst();
 
             if (billAvailable.isPresent()) {
                 Bill bill = billAvailable.get();
@@ -77,7 +77,7 @@ public class ChangeCalculatorService {
 
             final var bal = coinAmount;
 
-            Optional<Coin> coinAvailable = coins.stream().filter(coin -> coinInventory.isCoinAvailable(coin)).filter(coin -> isLessThanOrEqual(bal, coin)).findFirst();
+            Optional<Coin> coinAvailable = coins.stream().filter(coin -> coinInventory.isCoinAvailable(coin)).filter(coin -> isLessThanOrEqual(bal, coin.getCoinValue())).findFirst();
 
             if (coinAvailable.isPresent()) {
                 Coin coin = coinAvailable.get();
@@ -87,7 +87,7 @@ public class ChangeCalculatorService {
                 LOGGER.info(coin + "-" + "Count:" + count + "- Remaining Balance:" + coinAmount);
                 coinDenominations.put(coin, coinDenominations.getOrDefault(coin, 0) + count);
             } else {
-                throw new CoinNotAvailableException("Coins not available for remaining balance:" + coinAmount + " , Coin balance:" + coinInventory.getCoinBalance());
+                throw new CoinNotAvailableException("Coins are not available for the remaining balance amount:" + coinAmount + " , Coin balance:" + coinInventory.getCoinBalance());
             }
 
         }
@@ -95,12 +95,8 @@ public class ChangeCalculatorService {
         return coinDenominations;
     }
 
-    private boolean isLessThanOrEqual(BigDecimal bal, Coin coin) {
-        return coin.getCoinValue().compareTo(bal) == -1 || coin.getCoinValue().compareTo(bal) == 0;
-    }
-
-    private boolean isLessThanOrEqual(BigDecimal bal, Bill bill) {
-        return bill.getBillValue().compareTo(bal) == -1 || bill.getBillValue().compareTo(bal) == 0;
+    private boolean isLessThanOrEqual(BigDecimal bal, BigDecimal billValue) {
+        return billValue.compareTo(bal) == -1 || billValue.compareTo(bal) == 0;
     }
 
     public CoinBalanceResponseDTO getCoinBalance() {

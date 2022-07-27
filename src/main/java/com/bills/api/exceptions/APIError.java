@@ -4,6 +4,9 @@ public class APIError {
 
     private String reason;
 
+    public APIError() {
+    }
+
     public APIError(String reason) {
         this.reason = reason;
     }

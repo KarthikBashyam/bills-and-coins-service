@@ -28,9 +28,6 @@ public class ChangeCalculatorController {
         return changeCalculatorService.getCoinBalance();
     }
 
-    @GetMapping("/hello")
-    public String hello() {
-        return "Welcome";
-    }
+
 
 }
