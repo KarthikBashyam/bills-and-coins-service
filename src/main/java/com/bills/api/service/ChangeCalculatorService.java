@@ -87,10 +87,10 @@ public class ChangeCalculatorService {
 
         while (balance.doubleValue() > 1) {
             final BigDecimal bal = balance;
-            Optional<Bill> billAvailable = bills.stream().filter(bill -> isBillOrCoinLessThanOrEqualToBalance(bal, bill.getBillValue())).findFirst();
+            Optional<Bill> isBillAvailable = bills.stream().filter(bill -> isBillOrCoinLessThanOrEqualToBalance(bal, bill.getBillValue())).findFirst();
 
-            if (billAvailable.isPresent()) {
-                Bill bill = billAvailable.get();
+            if (isBillAvailable.isPresent()) {
+                Bill bill = isBillAvailable.get();
                 int count = (int) balance.divide(bill.getBillValue()).intValue();
                 balance = balance.remainder(bill.getBillValue());
                 billDenomination.put(bill, billDenomination.getOrDefault(bill, 0) + count);
@@ -114,10 +114,12 @@ public class ChangeCalculatorService {
 
             final var bal = coinAmount;
 
-            Optional<Coin> coinAvailable = coins.stream().filter(coinInventory::isCoinAvailable).filter(coin -> isBillOrCoinLessThanOrEqualToBalance(bal, coin.getCoinValue())).findFirst();
+            Optional<Coin> isCoinAvailable = coins.stream()
+                    .filter(coinInventory::isCoinAvailable)
+                    .filter(coin -> isBillOrCoinLessThanOrEqualToBalance(bal, coin.getCoinValue())).findFirst();
 
-            if (coinAvailable.isPresent()) {
-                Coin coin = coinAvailable.get();
+            if (isCoinAvailable.isPresent()) {
+                Coin coin = isCoinAvailable.get();
                 int count = Math.min(bal.divide(coin.getCoinValue(), 0).intValue(), coinInventory.getCount(coin));
                 coinAmount = coinAmount.subtract(coin.getCoinValue().multiply(BigDecimal.valueOf(count)));
                 coinInventory.reduceCoinCount(coin, count);
