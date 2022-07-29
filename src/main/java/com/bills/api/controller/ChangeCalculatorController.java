@@ -20,7 +20,7 @@ public class ChangeCalculatorController {
 
     @PostMapping("/calculate")
     public ChangeResponseDTO calculateChange(@Valid @RequestBody ChangeRequestDTO requestDTO) throws CoinNotAvailableException {
-        return changeCalculatorService.calculate(requestDTO.getAmount());
+        return changeCalculatorService.calculate(requestDTO);
     }
 
     @GetMapping("/coins/balance")
