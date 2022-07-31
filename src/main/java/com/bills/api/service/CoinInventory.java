@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 
 @Component
@@ -32,17 +35,19 @@ public class CoinInventory {
     }
 
 
-    public void reduceCoinCount(Coin coin, Integer count) {
-        //TODO: Check coin balance before decrementing the count.
-        coinCount.computeIfPresent(coin, updateCoinCountAtomically(count));
+    public void reduceCoinCount(Coin coin, Integer count)  {
+        // Check and update coin balance before atomically.
+        this.coinCount.computeIfPresent(coin, updateCoinCountAtomically(count));
     }
 
     private BiFunction<Coin, Integer, Integer> updateCoinCountAtomically(Integer count) {
         return (k, v) -> {
             if(v >= count) {
+                System.out.println("Thread:"+Thread.currentThread().getName());
                 return v - count;
             } else {
-             throw new CoinNotAvailableException("Coins are not available");
+              System.out.println("Else Thread:"+ Thread.currentThread().getName());
+             throw new CoinNotAvailableException("Coins are not available for " + k);
             }
         };
     }
@@ -50,4 +55,42 @@ public class CoinInventory {
     public Map<Coin, Integer> getCoinBalance() {
         return coinCount;
     }
+
+    public static void main(String[] args) {
+
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+        CoinConfig coinConfig = new CoinConfig();
+        coinConfig.setCentCount(20);
+        coinConfig.setNickelCount(20);
+        coinConfig.setQuarterCount(20);
+        coinConfig.setDimeCount(20);
+        CoinInventory coinInventory = new CoinInventory(coinConfig);
+
+            Runnable task1 = () -> {
+                try {
+                    coinInventory.reduceCoinCount(Coin.QUARTER,20);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            };
+
+            Runnable task2 = () -> {
+                try {
+                    coinInventory.reduceCoinCount(Coin.QUARTER,20);
+                } catch (Exception e) {
+                  e.printStackTrace();
+                }
+            };
+            executorService.submit(task1);
+            executorService.submit(task2);
+
+
+
+        System.out.println(coinInventory.coinCount);
+
+        executorService.shutdown();
+
+    }
+
 }
