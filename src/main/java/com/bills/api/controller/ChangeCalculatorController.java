@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -19,7 +20,7 @@ public class ChangeCalculatorController {
     private ChangeCalculatorService changeCalculatorService;
 
     @PostMapping("/calculate")
-    public ChangeResponseDTO calculateChange(@Valid @RequestBody ChangeRequestDTO requestDTO) throws CoinNotAvailableException {
+    public ChangeResponseDTO calculateChange(@Valid @RequestBody ChangeRequestDTO requestDTO) {
         return changeCalculatorService.calculate(requestDTO.getAmount());
     }
 

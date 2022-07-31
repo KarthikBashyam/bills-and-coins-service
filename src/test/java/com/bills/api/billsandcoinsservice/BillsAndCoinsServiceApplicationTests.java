@@ -17,6 +17,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
 
@@ -41,7 +42,7 @@ class BillsAndCoinsServiceApplicationTests {
 	@Test
 	public void validateChangeServiceRequest() {
 		ChangeRequestDTO requestDTO = new ChangeRequestDTO();
-		requestDTO.setAmount(0.0);
+		requestDTO.setAmount(BigDecimal.ZERO);
 
 		HttpEntity<ChangeRequestDTO> request = new HttpEntity<>(requestDTO, getHttpHeaders());
 
@@ -66,19 +67,20 @@ class BillsAndCoinsServiceApplicationTests {
 	@Test
 	public void validateChangeServiceResponse() {
 		ChangeRequestDTO requestDTO = new ChangeRequestDTO();
-		requestDTO.setAmount(115.50);
+		requestDTO.setAmount(BigDecimal.valueOf(30));
 
 		HttpEntity<ChangeRequestDTO> request = new HttpEntity<>(requestDTO, getHttpHeaders());
 
 		ChangeResponseDTO changeRespoonseDTO = this.restTemplate.postForObject("http://localhost:" + port + "/calculate",
 				requestDTO, ChangeResponseDTO.class);
-		Map<Bill, Integer> billsDenominations = changeRespoonseDTO.getBillsDenominations();
+		//Map<Bill, Integer> billsDenominations = changeRespoonseDTO.getBillsDenominations();
 		Map<Coin, Integer> coinsDenominations = changeRespoonseDTO.getCoinDenominations();
 
-		assertThat(billsDenominations.get(Bill.HUNDRED)).isEqualTo(Integer.valueOf(1));
-		assertThat(billsDenominations.get(Bill.TEN)).isEqualTo(Integer.valueOf(1));
-		assertThat(billsDenominations.get(Bill.FIVE)).isEqualTo(Integer.valueOf(1));
-		assertThat(coinsDenominations.get(Coin.QUARTER)).isEqualTo(Integer.valueOf(2));
+		//assertThat(billsDenominations.get(Bill.HUNDRED)).isEqualTo(Integer.valueOf(1));
+		//assertThat(billsDenominations.get(Bill.TEN)).isEqualTo(Integer.valueOf(1));
+		//assertThat(billsDenominations.get(Bill.FIVE)).isEqualTo(Integer.valueOf(1));
+		assertThat(coinsDenominations.get(Coin.QUARTER)).isEqualTo(Integer.valueOf(100));
+		assertThat(coinsDenominations.get(Coin.DIME)).isEqualTo(Integer.valueOf(50));
 	}
 
 }

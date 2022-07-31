@@ -1,12 +1,15 @@
 package com.bills.api.service;
 
 import com.bills.api.domain.Coin;
+import com.bills.api.exceptions.CoinNotAvailableException;
 import com.bills.api.util.CoinConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 
 @Component
 public class CoinInventory {
@@ -28,8 +31,20 @@ public class CoinInventory {
         return coinCount.get(coin);
     }
 
+
     public void reduceCoinCount(Coin coin, Integer count) {
-        coinCount.computeIfPresent(coin, (k,v) -> v - count);
+        //TODO: Check coin balance before decrementing the count.
+        coinCount.computeIfPresent(coin, updateCoinCountAtomically(count));
+    }
+
+    private BiFunction<Coin, Integer, Integer> updateCoinCountAtomically(Integer count) {
+        return (k, v) -> {
+            if(v >= count) {
+                return v - count;
+            } else {
+             throw new CoinNotAvailableException("Coins are not available");
+            }
+        };
     }
 
     public Map<Coin, Integer> getCoinBalance() {

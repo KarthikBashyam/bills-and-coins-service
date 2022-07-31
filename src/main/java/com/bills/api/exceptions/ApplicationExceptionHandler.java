@@ -19,4 +19,5 @@ public class ApplicationExceptionHandler {
         APIError apiError = new APIError(me.getMessage());
         return ResponseEntity.badRequest().body(apiError);
     }
+
 }

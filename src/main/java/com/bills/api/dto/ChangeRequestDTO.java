@@ -2,16 +2,18 @@ package com.bills.api.dto;
 
 import org.hibernate.validator.constraints.Range;
 
+import java.math.BigDecimal;
+
 public class ChangeRequestDTO {
 
     @Range(min = 1)
-    private double amount;
+    private BigDecimal amount;
 
-    public double getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 }
