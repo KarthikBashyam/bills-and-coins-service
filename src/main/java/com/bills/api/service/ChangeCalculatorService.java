@@ -83,10 +83,10 @@ public class ChangeCalculatorService {
                 if (isCoinAvailable.isPresent()) {
                     Coin coin = isCoinAvailable.get();
                     int numberOfCoins = getAvailableCoinCount(coinAmount, coin);
-                    coinAmount = calculateRemainingBalance(coinAmount, coin, numberOfCoins);
                     coinInventory.debitCoinCount(coin, numberOfCoins);
+                    coinDenominations.put(coin, coinDenominations.getOrDefault(coin, 0) + numberOfCoins);git
+                    coinAmount = calculateRemainingBalance(coinAmount, coin, numberOfCoins);
                     LOGGER.info(coin + "-" + "Count:" + numberOfCoins + "- Remaining Balance:" + coinAmount);
-                    coinDenominations.put(coin, coinDenominations.getOrDefault(coin, 0) + numberOfCoins);
                 } else {
                     coinInventory.creditCoinCount(coinDenominations);
                     throw new CoinNotAvailableException("Coins are not available for the remaining balance amount:" + coinAmount + " , Coin balance:" + coinInventory.getCoinBalance());
