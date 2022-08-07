@@ -3,7 +3,6 @@ package com.bills.api.billsandcoinsservice;
 import com.bills.api.controller.ChangeCalculatorController;
 import static org.assertj.core.api.Assertions.*;
 
-import com.bills.api.domain.Bill;
 import com.bills.api.domain.Coin;
 import com.bills.api.dto.ChangeRequestDTO;
 import com.bills.api.dto.ChangeResponseDTO;
@@ -22,8 +21,12 @@ import java.util.Collections;
 import java.util.Map;
 
 
+/**
+ * Integration tests should cover happy paths.
+ *
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class BillsAndCoinsServiceApplicationTests {
+class BillsAndCoinsServiceIntegrationTests {
 
 	@LocalServerPort
 	private int port;
@@ -35,7 +38,6 @@ class BillsAndCoinsServiceApplicationTests {
 	private ChangeCalculatorController controller;
 	@Test
 	void contextLoads() {
-
 		assertThat(controller).isNotNull();
 	}
 
@@ -48,6 +50,7 @@ class BillsAndCoinsServiceApplicationTests {
 
 		APIError apiError = this.restTemplate.postForObject("http://localhost:" + port + "/calculate",
 				requestDTO, APIError.class);
+
 		assertThat(apiError.getReason()).contains("Validation failed");
 	}
 
@@ -58,7 +61,7 @@ class BillsAndCoinsServiceApplicationTests {
 	}
 
 	@Test
-	public void greetingShouldReturnDefaultMessage() throws Exception {
+	public void coinBalanceShouldContainCoinType() throws Exception {
 		assertThat(this.restTemplate.getForObject("http://localhost:" + port + "/coins/balance",
 				String.class)).contains("DIME");
 
@@ -73,14 +76,23 @@ class BillsAndCoinsServiceApplicationTests {
 
 		ChangeResponseDTO changeRespoonseDTO = this.restTemplate.postForObject("http://localhost:" + port + "/calculate",
 				requestDTO, ChangeResponseDTO.class);
-		//Map<Bill, Integer> billsDenominations = changeRespoonseDTO.getBillsDenominations();
+
 		Map<Coin, Integer> coinsDenominations = changeRespoonseDTO.getCoinDenominations();
 
-		//assertThat(billsDenominations.get(Bill.HUNDRED)).isEqualTo(Integer.valueOf(1));
-		//assertThat(billsDenominations.get(Bill.TEN)).isEqualTo(Integer.valueOf(1));
-		//assertThat(billsDenominations.get(Bill.FIVE)).isEqualTo(Integer.valueOf(1));
 		assertThat(coinsDenominations.get(Coin.QUARTER)).isEqualTo(Integer.valueOf(100));
 		assertThat(coinsDenominations.get(Coin.DIME)).isEqualTo(Integer.valueOf(50));
 	}
 
+	@Test
+	public void validateCoinNotAvailableException() {
+
+		ChangeRequestDTO requestDTO = new ChangeRequestDTO();
+		requestDTO.setAmount(BigDecimal.valueOf(42));
+		HttpEntity<ChangeRequestDTO> request = new HttpEntity<>(requestDTO, getHttpHeaders());
+
+		APIError apiError = this.restTemplate.postForObject("http://localhost:" + port + "/calculate",
+				requestDTO, APIError.class);
+		assertThat(apiError.getReason()).contains("Coins are not available");
+	}
 }
+

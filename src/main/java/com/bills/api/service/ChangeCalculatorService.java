@@ -13,12 +13,13 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Service
 public class ChangeCalculatorService {
 
-    private Logger LOGGER = LoggerFactory.getLogger(ChangeCalculatorService.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(ChangeCalculatorService.class);
 
     private CoinInventory coinInventory;
 
@@ -72,39 +73,41 @@ public class ChangeCalculatorService {
 
         Map<Coin, Integer> coinDenominations = new HashMap<>();
 
-        while (coinAmount.doubleValue() > 0) {
+        // Read and reduce coin count has to be atomic.
+        var lock = new ReentrantLock();
 
-            final var bal = coinAmount;
-
-            Optional<Coin> coinAvailable = getAvailableCoin(bal);
-
-            if (coinAvailable.isPresent()) {
-                Coin coin = coinAvailable.get();
-                int count = Math.min(bal.divide(coin.getCoinValue(), RoundingMode.FLOOR).intValue(), coinInventory.getCount(coin));
-                coinAmount = coinAmount.subtract(coin.getCoinValue().multiply(BigDecimal.valueOf(count)));
-                coinInventory.reduceCoinCount(coin, count); //This has to be atomic
-                LOGGER.info(coin + "-" + "Count:" + count + "- Remaining Balance:" + coinAmount);
-                coinDenominations.put(coin, coinDenominations.getOrDefault(coin, 0) + count);
-            } else {
-                throw new CoinNotAvailableException("Coins are not available for the remaining balance amount:" + coinAmount + " , Coin balance:" + coinInventory.getCoinBalance());
+        try {
+            lock.lock();
+            while (coinAmount.doubleValue() > 0) {
+                Optional<Coin> isCoinAvailable = coinInventory.getAvailableCoin(coinAmount);
+                if (isCoinAvailable.isPresent()) {
+                    Coin coin = isCoinAvailable.get();
+                    int numberOfCoins = getAvailableCoinCount(coinAmount, coin);
+                    coinAmount = calculateRemainingBalance(coinAmount, coin, numberOfCoins);
+                    coinInventory.debitCoinCount(coin, numberOfCoins);
+                    LOGGER.info(coin + "-" + "Count:" + numberOfCoins + "- Remaining Balance:" + coinAmount);
+                    coinDenominations.put(coin, coinDenominations.getOrDefault(coin, 0) + numberOfCoins);
+                } else {
+                    coinInventory.creditCoinCount(coinDenominations);
+                    throw new CoinNotAvailableException("Coins are not available for the remaining balance amount:" + coinAmount + " , Coin balance:" + coinInventory.getCoinBalance());
+                }
             }
 
+        } finally {
+            lock.unlock();
         }
         LOGGER.info(coinDenominations.toString());
         return coinDenominations;
     }
 
-    private Optional<Coin> getAvailableCoin(BigDecimal bal) {
-        Optional<Coin> coinAvailable = coins.stream()
-                .filter(coinInventory::isCoinAvailable)
-                .filter(coin -> isBillValueLessThanOrEqualToBalance(bal, coin.getCoinValue()))
-                .findFirst();
-        return coinAvailable;
+    private int getAvailableCoinCount(BigDecimal coinAmount, Coin coinType) {
+        return Math.min(coinAmount.divide(coinType.getCoinValue(), RoundingMode.FLOOR).intValue(), coinInventory.getCount(coinType));
     }
 
-    private boolean isBillValueLessThanOrEqualToBalance(BigDecimal bal, BigDecimal billValue) {
-        return billValue.compareTo(bal) == -1 || billValue.compareTo(bal) == 0;
+    private static BigDecimal calculateRemainingBalance(BigDecimal coinAmount, Coin coin, int numOfCoins) {
+        return coinAmount.subtract(coin.getCoinValue().multiply(BigDecimal.valueOf(numOfCoins)));
     }
+
 
     public CoinBalanceResponseDTO getCoinBalance() {
         return new CoinBalanceResponseDTO(coinInventory.getCoinBalance());

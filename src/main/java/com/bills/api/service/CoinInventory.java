@@ -1,20 +1,21 @@
 package com.bills.api.service;
 
 import com.bills.api.domain.Coin;
-import com.bills.api.exceptions.CoinNotAvailableException;
 import com.bills.api.util.CoinConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 @Component
 public class CoinInventory {
     private Map<Coin, Integer> coinCount = new ConcurrentHashMap<>();
+
+    private static List<Coin> coins = new ArrayList<>(EnumSet.allOf(Coin.class).stream()
+            .sorted(Comparator.comparing(Coin::getCoinValue).reversed()).collect(Collectors.toList()));
 
     @Autowired
     public CoinInventory(CoinConfig coinConfig) {
@@ -32,63 +33,29 @@ public class CoinInventory {
         return coinCount.get(coin);
     }
 
-
-    public void reduceCoinCount(Coin coin, Integer count)  {
-        // Check and update coin balance before atomically.
-        this.coinCount.computeIfPresent(coin, updateCoinCountAtomically(count));
+    public Optional<Coin> getAvailableCoin(final BigDecimal amount) {
+        return coins.stream()
+                .filter(this::isCoinAvailable)
+                .filter(coin -> isBillValueLessThanOrEqualToBalance(amount, coin.getCoinValue()))
+                .findFirst();
     }
 
-    private BiFunction<Coin, Integer, Integer> updateCoinCountAtomically(Integer count) {
-        return (k, v) -> {
-            if(v >= count) {
-                System.out.println("Thread:"+Thread.currentThread().getName());
-                return v - count;
-            } else {
-              System.out.println("Else Thread:"+ Thread.currentThread().getName());
-             throw new CoinNotAvailableException("Coins are not available for " + k);
-            }
-        };
+    private boolean isBillValueLessThanOrEqualToBalance(BigDecimal bal, BigDecimal billValue) {
+        return billValue.compareTo(bal) == -1 || billValue.compareTo(bal) == 0;
+    }
+
+
+    public void debitCoinCount(Coin coin, Integer count)  {
+        this.coinCount.computeIfPresent(coin, (k, v) -> v - count);
     }
 
     public Map<Coin, Integer> getCoinBalance() {
         return coinCount;
     }
 
-    public static void main(String[] args) {
-
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
-
-        CoinConfig coinConfig = new CoinConfig();
-        coinConfig.setCentCount(20);
-        coinConfig.setNickelCount(20);
-        coinConfig.setQuarterCount(20);
-        coinConfig.setDimeCount(20);
-        CoinInventory coinInventory = new CoinInventory(coinConfig);
-
-            Runnable task1 = () -> {
-                try {
-                    coinInventory.reduceCoinCount(Coin.QUARTER,20);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            };
-
-            Runnable task2 = () -> {
-                try {
-                    coinInventory.reduceCoinCount(Coin.QUARTER,20);
-                } catch (Exception e) {
-                  e.printStackTrace();
-                }
-            };
-            executorService.submit(task1);
-            executorService.submit(task2);
-
-
-
-        System.out.println(coinInventory.coinCount);
-
-        executorService.shutdown();
-
+    public void creditCoinCount(Map<Coin, Integer> coinDenominations) {
+        for(Map.Entry<Coin, Integer> coins : coinDenominations.entrySet()) {
+            this.coinCount.computeIfPresent(coins.getKey(), (k, v) -> v + coins.getValue());
+        }
     }
-
 }
